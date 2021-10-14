@@ -1,0 +1,11 @@
+TOKEN = 'DISCORD_BOT_TOKEN'
+ANEKDOT_URL = 'https://official-joke-api.appspot.com/random_joke'
+RICK_AND_MORTY_URL = 'https://rickandmortyapi.com/api/'
+
+MYSQL_HOST = 'MYSQL_HOST'
+MYSQL_USER = 'MYSQL_USER'
+MYSQL_PASSWORD = 'MYSQL_PASSWORD'
+MYSQL_DATABASE = 'MYSQL_DATABASE'
+MYSQL_PORT = 'MYSQL_PORT'
+
+FACEIT_API_KEY = 'FACEIT_API_KEY'
