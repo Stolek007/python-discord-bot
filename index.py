@@ -4,7 +4,7 @@ import env
 import typing
 import random
 import dumper
-import rick_and_morty_api
+# import rick_and_morty_api
 import requests
 import bd
 import datetime
@@ -14,6 +14,7 @@ import time
 import mathem
 import work_with_api
 import uuid
+import myconst
 
 import discord
 from discord.ext import commands
@@ -21,8 +22,8 @@ from discord.ext import commands
 intents = discord.Intents.default()
 intents.members = True
 
-bot = commands.Bot('!', intents=intents, help_command=None,
-                   activity=discord.Activity(type=discord.ActivityType.competing, name='Purple Chat'),
+bot = commands.Bot('?', intents=intents, help_command=None,
+                   activity=discord.Activity(type=discord.ActivityType.competing, name='?help'),
                    owner_ids=[345526389665038336])
 
 
@@ -33,6 +34,10 @@ async def on_message(message):
         return await message.delete()
 
     await bot.process_commands(message)
+
+
+async def on_command_error(ctx, error):
+    return await help(ctx)
 
 
 @bot.command(name="передать")
@@ -67,8 +72,16 @@ async def pay_user_to_user(ctx: commands.Context, member: discord.Member, curren
     return await ctx.send(embed=embed)
 
 
+@bot.command(name="создатель")
+async def creator(ctx: commands.Context):
+    embed = discord.Embed(color=0x28fc64, title="Создатель", description=myconst.CREATOR)
+    return await ctx.send(embed=embed)
+
+
 @bot.command(name="розыгрыш")
 async def rozigrash_ebana(ctx: commands.Context, coins_count):
+    if coins_count is None:
+        return await ctx.send('Вы не указали сумму розыгрыша')
     if check_for_admin(ctx.message.author.id) == 1:
         await ctx.send(f'Розыгрываем {coins_count} коинов')
     else:
@@ -107,9 +120,6 @@ async def rozigrash_ebana(ctx: commands.Context, coins_count):
 # Админ команды
 @bot.command(name="бан")
 async def ban_user(ctx: commands.Context, member: discord.Member, time_to_ban, reason):
-    print(ctx.message.author.id)
-    print(check_for_admin(ctx.message.author.id))
-
     if check_for_admin(str(ctx.message.author.id)) == 0:
         return await ctx.send('Ты не мой модератор')
 
@@ -158,16 +168,25 @@ async def unban_user(ctx: commands.Context, member: discord.Member):
 
 @bot.command(name="мут")
 async def mute_user(ctx: commands.Context, member: discord.Member):
-    connection = bd.get_connection()
-    cursor = connection.cursor(buffered=True, dictionary=True)
-    sql_to_mute_user = f"UPDATE `users` SET muted = 1 WHERE discord_id = {member.id}"
-    cursor.execute(sql_to_mute_user)
-    connection.commit()
-    connection.close()
+    is_admin = False
 
-    await member.send(f'Вы были замучены модератором {ctx.message.author.name}')
+    if check_for_admin(member.id) is None or check_for_admin(member.id) == 0:
+        is_admin = False
+    else:
+        is_admin = True
 
-    return await ctx.send(f'Я замутил пользователя <@{member.id}>. По указанию модератора: <@{ctx.message.author.id}>')
+    if is_admin:
+        connection = bd.get_connection()
+        cursor = connection.cursor(buffered=True, dictionary=True)
+        sql_to_mute_user = f"UPDATE `users` SET muted = 1 WHERE discord_id = {member.id}"
+        cursor.execute(sql_to_mute_user)
+        connection.commit()
+        connection.close()
+
+        await member.send(f'Вы были замучены модератором {ctx.message.author.name}')
+
+        return await ctx.send(
+            f'Я замутил пользователя <@{member.id}>. По указанию модератора: <@{ctx.message.author.id}>')
 
 
 @bot.command(name="размут")
@@ -175,7 +194,7 @@ async def unmute_user(ctx: commands.Context, member: discord.Member):
     connection = bd.get_connection()
     cursor = connection.cursor(buffered=True, dictionary=True)
     sql_to_unmute_user = f"UPDATE `users` SET muted = 0 WHERE discord_id = {member.id}"
-    cursor.execute()
+    cursor.execute(sql_to_unmute_user)
     connection.commit()
     connection.close()
 
@@ -190,6 +209,9 @@ def check_for_user_mute(user_id: str):
     sql_to_check_is_user_mute = f"SELECT muted FROM `users` WHERE discord_id = {user_id}"
     cursor.execute(sql_to_check_is_user_mute)
     result = cursor.fetchone()
+
+    if result is None:
+        return False
 
     if result['muted'] is None:
         return False
@@ -309,7 +331,9 @@ async def notify(ctx: commands.Context, target: ChannelOrMemberConverter):
     # the `argument` parameter of the `ChannelOrMemberConverter.convert` method and
     # the conversion will go through the process defined there.
 
-    await target.send('Проверь Purple Chat, {}!'.format(target.name))
+    print(ctx.message.guild.name)
+
+    await target.send('Проверь {fchat}, {fname}!'.format(fchat=ctx.message.guild.name, fname=target.name))
 
     return await ctx.send('Уведомил', delete_after=60)
 
@@ -548,31 +572,20 @@ async def balance(ctx: commands.Context):
 
 @bot.command()
 async def help(ctx: commands.Context):
-    embed = discord.Embed(color=0x17cf45, title='Помощь', description='```'
-                                                                      '!регистрация - регистрация в Базе Бота\n'
-                                                                      '!кейс айди_кейса - открыть кейс\n'
-                                                                      '!дуэль упомнять_юзера количество_коинов - вызвать юзера на дуэль\n'
-                                                                      '!777 зеленый/красный/черный ставка - азино три топора\n'
-                                                                      '!сколькокейсов - проверить количество открытых кейсов\n'
-                                                                      '!баланс - прорвеить свой баланс\n'
-                                                                      '!bibametr - узнать свой размер бибы\n'
-                                                                      '!инфо - информация по аккаунту дс\n'
-                                                                      '!гей - узнать гей ты или нет\n'
-                                                                      '!уведомить - уведомить юзера о том, что он нужен в Purple Chat\n'
-                                                                      '!рикиморти id - персонаж по айди\n'
-                                                                      '!гоиграть название_игры - позвать участников сервера играть в игру\n'
-                                                                      '!юзеры - количество юзеров на сервере\n'
-                                                                      '!пример - решение примера за балы\n'
-                                                                      '!угадайчисло - угадывание числа за балы\n'
-                                                                      '!премиум - количество юзеров с Discord Nitro\n'
-                                                                      '!имя айди_пользователя - узнать имя дс и ник юзера по айди\n'
-                                                                      '!лидеры - таблица лидеров по кол-во коинов\n'
-                                                                      '!место - ваше место в таблице лидеров по кол-ву коинов\n'
-                                                                      '!обновитьимя - обновить имя в базе бота\n'
-                                                                      '!перевод упомянуть_юзера сумма - перевод своих средств игроку (комиссия = 10 коинов)\n```'
-                                                                      '**Суть**: Вам нужно решать примеры или угадывать загаданые ботом числа, чтобы получать коины, за которые вы сможете открывать кейсы, и выбивать роли')
+    embed = discord.Embed(color=0x17cf45, title='Помощь', description=myconst.USER_HELP)
+
+    if check_for_admin(ctx.message.author.id) == 1:
+        moderator_embed = discord.Embed(color=0x17cf45, title="Помощь для модераторов", description=myconst.MODERATOR_HELP)
+        await ctx.message.author.send(embed=moderator_embed)
 
     await ctx.send(embed=embed)
+
+
+@bot.command(name="кацапы")
+async def kazapi(ctx: commands.Context):
+    embed = discord.Embed(color=0xCC0000, title='Дохлые кацапы', description=myconst.KAZAPI)
+
+    return await ctx.send(embed=embed)
 
 
 @bot.command(name='пример')
@@ -737,16 +750,28 @@ async def duel(ctx: commands.Context, member: discord.Member, coins_count):
 
     answer = ''
 
-    try:
-        await ctx.send('Ожидаем ответа от ' + str(member.name))
-        answer = await bot.wait_for("message", timeout=25)
-    except TimeoutError:
-        await ctx.send('Время вышло, соперник не ответил')
+    while answer == '':
+        p_result = ''
+        try:
+            await ctx.send('Ожидаем ответа от ' + str(member.name))
+            p_result = await bot.wait_for("message", timeout=25)
+        except TimeoutError:
+            return await ctx.send('Время вышло, соперник не ответил')
 
-    if (str(answer.content) == 'да' or str(answer.content) == 'Да') and str(answer.author.id) == str(member.id):
-        await ctx.send('Начинаем!')
-    else:
-        return await ctx.send('Не тот ответил! Дуэль окончен')
+        if (str(p_result.content) == 'да' or str(p_result.content) == 'Да') and str(p_result.author.id) == str(member.id):
+            answer = p_result
+            await ctx.send('Начинаем!')
+
+    # try:
+    #     await ctx.send('Ожидаем ответа от ' + str(member.name))
+    #     answer = await bot.wait_for("message", timeout=25)
+    # except TimeoutError:
+    #     await ctx.send('Время вышло, соперник не ответил')
+    #
+    # if (str(answer.content) == 'да' or str(answer.content) == 'Да') and str(answer.author.id) == str(member.id):
+    #     await ctx.send('Начинаем!')
+    # else:
+    #     return await ctx.send('Ответил кто-то другой')
 
     connection = bd.get_connection()
     cursor = connection.cursor(buffered=True, dictionary=True)
@@ -798,6 +823,11 @@ async def duel(ctx: commands.Context, member: discord.Member, coins_count):
         return await ctx.send('Ничья!')
 
 
+@bot.command(name="розыграть")
+async def start_event(ctx: commands.Context):
+    return await ctx.send('Тест') #TODO: сделать команду розыгрыша
+
+
 @bot.command(name="777")
 async def casino_play(ctx: commands.Context, color: str, coins_count):
     if check_for_user_registration(ctx.message.author.id) is False:
@@ -825,19 +855,19 @@ async def casino_play(ctx: commands.Context, color: str, coins_count):
     random_color = random.choices(color_array, [80, 50, 10])[0]
 
     if random_color == 'красный':
-        embed = discord.Embed(color=0xCC0000, title='Purple Chat Casino', description='Кручу колесо')
+        embed = discord.Embed(color=0xCC0000, title='Зеленский Casino', description='Кручу колесо')
         embed.set_image(url='https://cdn.discordapp.com/attachments/345528162668511242/858744572737224724/red.gif')
         await ctx.send(embed=embed, delete_after=20)
     elif random_color == 'черный':
         if random_color == color:
             coins_count = coins_count * 2
-        embed = discord.Embed(color=0x000000, title='Purple Chat Casino', description='Кручу колесо')
+        embed = discord.Embed(color=0x000000, title='Зеленский Casino', description='Кручу колесо')
         embed.set_image(url='https://cdn.discordapp.com/attachments/345528162668511242/858743759184068678/black.gif')
         await ctx.send(embed=embed, delete_after=20)
     elif random_color == 'зеленый':
         if random_color == color:
             coins_count = coins_count * 5
-        embed = discord.Embed(color=0x38761D, title='Purple Chat Casino', description='Кручу колесо')
+        embed = discord.Embed(color=0x38761D, title='Зеленский Casino', description='Кручу колесо')
         embed.set_image(
             url='https://cdn.discordapp.com/attachments/345528162668511242/858743281105633290/87802a4cb981ea58.gif')
         await ctx.send(embed=embed, delete_after=20)
@@ -885,7 +915,7 @@ async def go_in_game_cmd(ctx: commands.Context, game: str):
         return await ctx.send('Ты не администратор бота')
 
     server_members = ctx.guild.members
-    message_to_sent = f'Мощные типочки в Purple Chat идут в {game}, и набирают команду!'
+    message_to_sent = f'Мощные типочки в {ctx.message.guild.name} идут в {game}, и набирают команду!'
     await ctx.send('Зову. Ожидайте...')
     for server_member in server_members:
         try:
@@ -1006,7 +1036,7 @@ async def on_voice_state_update(member, before, after):
     elif before.channel is not None and after.channel is None and author in tdict:
         t2 = time.time()
         result = t2 - tdict[author]
-        coins_plus = int(int(result) / 10)
+        coins_plus = int(int(result) / 15)
         result_in_hours = round(result / 60, 1)
         connection = bd.get_connection()
         cursor = connection.cursor(buffered=True, dictionary=True)
@@ -1014,7 +1044,7 @@ async def on_voice_state_update(member, before, after):
         cursor.execute(sql_to_add_coins_count)
         connection.commit()
         connection.close()
-        await member.send(f'Вы провели в голосовом канале {result_in_hours} минут, вам начислено {coins_plus} коинов')
+        await member.send(f'Ты провел в голосовом канале {result_in_hours} минут, тебе начислено {coins_plus} коинов')
 
 
 @bot.command(name='лидеры')

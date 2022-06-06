@@ -1,27 +1,11 @@
 version: '3'
 
 services:
-  mysql:
-    image: library/mysql:5.7
-    volumes:
-      - ./docker/mysql:/var/lib/mysql
-    container_name: chema_bot_mysql
-    restart: always
-    environment:
-      - "MYSQL_USER=${MYSQL_USER}"
-      - "MYSQL_PASSWORD=${MYSQL_PASSWORD}"
-      - "MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}"
-      - "MYSQL_DATABASE=${MYSQL_DATABASE}"
-    ports:
-      - "3308:3306"
-
   piton:
     build:
       context: docker/piton
     stdin_open: true
     container_name: chema_bot_piton
     tty: true
-    depends_on:
-      - mysql
     volumes:
       - .:/piton
