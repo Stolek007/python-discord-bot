@@ -16,15 +16,18 @@ import work_with_api
 import uuid
 import myconst
 
-import discord
-from discord.ext import commands
+import nextcord
+from nextcord.ext import commands
+import interactions
 
-intents = discord.Intents.default()
-intents.members = True
+intents = nextcord.Intents.default()
+# intents.members = True
 
-bot = commands.Bot('?', intents=intents, help_command=None,
-                   activity=discord.Activity(type=discord.ActivityType.competing, name='?help'),
-                   owner_ids=[345526389665038336])
+# bot = commands.Bot(command_prefix='/', intents=intents, help_command=None,
+#                    activity=nextcord.Activity(type=nextcord.ActivityType.competing, name='/help'),
+#                    owner_ids=[345526389665038336])
+
+bot = commands.Bot(command_prefix='?', help_command=None, activity=nextcord.Activity(type=nextcord.ActivityType.competing, name='?help'))
 
 
 # Ивенты
@@ -41,7 +44,7 @@ async def on_command_error(ctx, error):
 
 
 @bot.command(name="передать")
-async def pay_user_to_user(ctx: commands.Context, member: discord.Member, current_coins_count):
+async def pay_user_to_user(ctx: commands.Context, member: nextcord.Member, current_coins_count):
     current_coins_count = int(current_coins_count)
 
     sql_to_check_valid_coins = f"SELECT coins FROM `users` WHERE discord_id = {ctx.message.author.id}"
@@ -66,7 +69,7 @@ async def pay_user_to_user(ctx: commands.Context, member: discord.Member, curren
     connection.commit()
     connection.close()
 
-    embed = discord.Embed(color=0x28fc64, title='Перевод коинов',
+    embed = nextcord.Embed(color=0x28fc64, title='Перевод коинов',
                           description='Перевод успешно выполнен. Коммисия за перевод - **10 коинов**')
 
     return await ctx.send(embed=embed)
@@ -74,7 +77,7 @@ async def pay_user_to_user(ctx: commands.Context, member: discord.Member, curren
 
 @bot.command(name="создатель")
 async def creator(ctx: commands.Context):
-    embed = discord.Embed(color=0x28fc64, title="Создатель", description=myconst.CREATOR)
+    embed = nextcord.Embed(color=0x28fc64, title="Создатель", description=myconst.CREATOR)
     return await ctx.send(embed=embed)
 
 
@@ -82,7 +85,7 @@ async def creator(ctx: commands.Context):
 async def rozigrash_ebana(ctx: commands.Context, coins_count):
     if coins_count is None:
         return await ctx.send('Вы не указали сумму розыгрыша')
-    if check_for_admin(ctx.message.author.id) == 1:
+    if check_for_admin(str(ctx.message.author.id)) == 1:
         await ctx.send(f'Розыгрываем {coins_count} коинов')
     else:
         return await ctx.send('Куда ты лезешь, клуша ?')
@@ -98,14 +101,14 @@ async def rozigrash_ebana(ctx: commands.Context, coins_count):
 
     time.sleep(5)
 
-    embed = discord.Embed(color=0x702687,
+    embed = nextcord.Embed(color=0x702687,
                           description=f'Кол-во участников: **{str(arr_count)}**\n\nРозыгрывается: **{coins_count} коинов**')
 
     await ctx.send(embed=embed)
 
     time.sleep(5)
 
-    embed = discord.Embed(color=0x702687, title="Победитель!",
+    embed = nextcord.Embed(color=0x702687, title="Победитель!",
                           description=f'Победил: <@' + random_user["discord_id"] + '>')
 
     connection.connect()
@@ -119,7 +122,7 @@ async def rozigrash_ebana(ctx: commands.Context, coins_count):
 
 # Админ команды
 @bot.command(name="бан")
-async def ban_user(ctx: commands.Context, member: discord.Member, time_to_ban, reason):
+async def ban_user(ctx: commands.Context, member: nextcord.Member, time_to_ban, reason):
     if check_for_admin(str(ctx.message.author.id)) == 0:
         return await ctx.send('Ты не мой модератор')
 
@@ -128,7 +131,7 @@ async def ban_user(ctx: commands.Context, member: discord.Member, time_to_ban, r
 
     if check_for_admin(member.id) is None:
         await member.send(f'Вы были забанены администратором - {ctx.message.author.name}')
-        await discord.Guild.ban(self=ctx.message.author.guild, user=member, reason=reason,
+        await nextcord.Guild.ban(self=ctx.message.author.guild, user=member, reason=reason,
                                 delete_message_days=int(time_to_ban))
 
         str_to_msg_and_log = f'Я забанил юзера {member.name} по указанию {ctx.message.author.name}. Причина: {reason}'
@@ -141,7 +144,7 @@ async def ban_user(ctx: commands.Context, member: discord.Member, time_to_ban, r
         return await ctx.send('Я не могу забанить своего модератора')
 
     await member.send(f'Вы были забанены администратором - {ctx.message.author.name}')
-    await discord.Guild.ban(self=ctx.message.author.guild, user=member, reason=reason,
+    await nextcord.Guild.ban(self=ctx.message.author.guild, user=member, reason=reason,
                             delete_message_days=int(time_to_ban))
 
     str_to_msg_and_log = f'Я забанил юзера {member.name} по указанию {ctx.message.author.name}. Причина: {reason}'
@@ -151,7 +154,7 @@ async def ban_user(ctx: commands.Context, member: discord.Member, time_to_ban, r
 
 
 @bot.command(name="разбан")
-async def unban_user(ctx: commands.Context, member: discord.Member):
+async def unban_user(ctx: commands.Context, member: nextcord.Member):
     is_admin = False
 
     if check_for_admin(member.id) is None or check_for_admin(member.id) == 0:
@@ -163,11 +166,11 @@ async def unban_user(ctx: commands.Context, member: discord.Member):
         str_to_msg_and_log = f'Я разбанил юзера {member.name} по указанию {ctx.message.author.name}'
         await ctx.send(str_to_msg_and_log)
         print(str_to_msg_and_log)
-        return await discord.Guild.unban(self=ctx.message.author.guild, user=member)
+        return await nextcord.Guild.unban(self=ctx.message.author.guild, user=member)
 
 
 @bot.command(name="мут")
-async def mute_user(ctx: commands.Context, member: discord.Member):
+async def mute_user(ctx: commands.Context, member: nextcord.Member):
     is_admin = False
 
     if check_for_admin(member.id) is None or check_for_admin(member.id) == 0:
@@ -190,7 +193,7 @@ async def mute_user(ctx: commands.Context, member: discord.Member):
 
 
 @bot.command(name="размут")
-async def unmute_user(ctx: commands.Context, member: discord.Member):
+async def unmute_user(ctx: commands.Context, member: nextcord.Member):
     connection = bd.get_connection()
     cursor = connection.cursor(buffered=True, dictionary=True)
     sql_to_unmute_user = f"UPDATE `users` SET muted = 0 WHERE discord_id = {member.id}"
@@ -225,7 +228,7 @@ def check_for_user_mute(user_id: str):
 @bot.command(name="clear")
 async def clear_chat(ctx: commands.Context, amount):
     amount = int(amount)
-    if check_for_admin(ctx.message.author.id) == 0:
+    if check_for_admin(str(ctx.message.author.id)) == 0:
         return await ctx.send('Я не думаю, что ты мой модератор')
 
     await ctx.channel.purge(limit=amount)
@@ -255,25 +258,25 @@ async def moderators_list(ctx: commands.Context):
     for item in current_moderators:
         str_result += f'{item}\n'
 
-    embed = discord.Embed(color=0x6b4391, title='Мои модераторы', description=str_result)
+    embed = nextcord.Embed(color=0x6b4391, title='Мои модераторы', description=str_result)
 
     return await ctx.send(embed=embed)
 
 
 @bot.command()
-async def userinfo(ctx: commands.Context, user: discord.User):
+async def userinfo(ctx: commands.Context, user: nextcord.User):
     # In the command signature above, you can see that the `user`
-    # parameter is typehinted to `discord.User`. This means that
+    # parameter is typehinted to `nextcord.User`. This means that
     # during command invocation we will attempt to convert
-    # the value passed as `user` to a `discord.User` instance.
-    # The documentation notes what can be converted, in the case of `discord.User`
+    # the value passed as `user` to a `nextcord.User` instance.
+    # The documentation notes what can be converted, in the case of `nextcord.User`
     # you pass an ID, mention or username (discrim optional)
     # E.g. 80088516616269824, @Danny or Danny#0007
 
     # NOTE: typehinting acts as a converter within the `commands` framework only.
     # In standard Python, it is use for documentation and IDE assistance purposes.
 
-    # If the conversion is successful, we will have a `discord.User` instance
+    # If the conversion is successful, we will have a `nextcord.User` instance
     # and can do the following:
     user_id = user.id
     username = user.name
@@ -294,7 +297,7 @@ class ChannelOrMemberConverter(commands.Converter):
     async def convert(self, ctx: commands.Context, argument: str):
         # In this example we have made a custom converter.
         # This checks if an input is convertible to a
-        # `discord.Member` or `discord.TextChannel` instance from the
+        # `nextcord.Member` or `nextcord.TextChannel` instance from the
         # input the user has given us using the pre-existing converters
         # that the library provides.
 
@@ -339,19 +342,19 @@ async def notify(ctx: commands.Context, target: ChannelOrMemberConverter):
 
 
 @bot.command()
-async def ignore(ctx: commands.Context, target: typing.Union[discord.Member, discord.TextChannel]):
+async def ignore(ctx: commands.Context, target: typing.Union[nextcord.Member, nextcord.TextChannel]):
     # This command signature utilises the `typing.Union` typehint.
     # The `commands` framework attempts a conversion of each type in this Union *in order*.
-    # So, it will attempt to convert whatever is passed to `target` to a `discord.Member` instance.
-    # If that fails, it will attempt to convert it to a `discord.TextChannel` instance.
+    # So, it will attempt to convert whatever is passed to `target` to a `nextcord.Member` instance.
+    # If that fails, it will attempt to convert it to a `nextcord.TextChannel` instance.
     # See: https://discordpy.readthedocs.io/en/latest/ext/commands/commands.html#typing-union
     # NOTE: If a Union typehint converter fails it will raise `commands.BadUnionArgument`
     # instead of `commands.BadArgument`.
 
     # To check the resulting type, `isinstance` is used
-    if isinstance(target, discord.Member):
+    if isinstance(target, nextcord.Member):
         await ctx.send('Member found: {}, adding them to the ignore list.'.format(target.mention))
-    elif isinstance(target, discord.TextChannel):  # this could be n `else` but for completeness' sakea.
+    elif isinstance(target, nextcord.TextChannel):  # this could be n `else` but for completeness' sakea.
         await ctx.send('Channel found: {}, adding it to the ignore list.'.format(target.mention))
 
 
@@ -391,21 +394,21 @@ def get_single_character(character_id):
 
 @bot.command(name='рикиморти')
 async def rickandmorty(ctx: commands.Context, character_id: str):
-    embed = discord.Embed()
+    embed = nextcord.Embed()
     result = get_single_character(character_id)
     embed.set_image(url=result['image_url'])
     await ctx.send(result['result'], embed=embed)
 
 
 @bot.command(name='инфо')
-async def info(ctx: commands.Context, discord_member: discord.Member):
+async def info(ctx: commands.Context, discord_member: nextcord.Member):
     result = '```Id: ' + str(discord_member.id) + '\n' + 'Дата создания аккаунта: ' + str(
         discord_member.created_at) + '\n' + 'Дата входа в канал: ' + str(
         discord_member.joined_at) + '\n' + 'Имя: ' + str(discord_member.name) + '\n' + 'Ник: ' + str(
         discord_member.nick) + '\n' + 'Роли: ' + str(discord_member.roles) + '\n' + 'Статус: ' + str(
         discord_member.status) + '```' + '\n' + 'Аватар: ' + str(discord_member.avatar_url)
 
-    embed = discord.Embed(color=0x8439DD, title='Информация о ' + str(discord_member.name), description=result)
+    embed = nextcord.Embed(color=0x8439DD, title='Информация о ' + str(discord_member.name), description=result)
 
     await ctx.send(embed=embed, delete_after=60)
 
@@ -421,8 +424,7 @@ async def register(ctx: commands.Context):
     connection = bd.get_connection()
     cursor = connection.cursor(dictionary=True, buffered=True)
 
-    sql_search_for_user = "SELECT * FROM `users` WHERE discord_id = " + str(author.id)
-    user = cursor.execute(sql_search_for_user)
+    user = cursor.execute('SELECT * FROM `users` WHERE discord_id = %s', (str(author.id), ))
 
     if user is None:
         now = datetime.datetime.utcnow()
@@ -463,19 +465,19 @@ async def case(ctx: commands.Context, case_id=None):
     case_price = 100000
 
     if case_id == 1:
-        result = check_acc(author.id, roles.CASE_1_PRICE)
+        result = check_acc(str(author.id), roles.CASE_1_PRICE)
         case_price = roles.CASE_1_PRICE
     elif case_id == 2:
-        result = check_acc(author.id, roles.CASE_2_PRICE)
+        result = check_acc(str(author.id), roles.CASE_2_PRICE)
         case_price = roles.CASE_2_PRICE
     elif case_id == 3:
-        result = check_acc(author.id, roles.CASE_3_PRICE)
+        result = check_acc(str(author.id), roles.CASE_3_PRICE)
         case_price = roles.CASE_3_PRICE
 
     if result is False:
         await ctx.send(
             'Недостаточно коинов на балансе\n!баланс - проверить баланс')
-        raise Exception('Недостаточный баланс - ' + author.id)
+        raise Exception('Недостаточный баланс - ' + str(author.id))
 
     connection = bd.get_connection()
     cursor = connection.cursor(buffered=True, dictionary=True)
@@ -500,7 +502,7 @@ async def case(ctx: commands.Context, case_id=None):
         raise Exception('Игрок ничего не выиграл - ' + str(author.id))
     else:
         await ctx.send('```Вы выиграли роль - ' + roles.ROLES_NAME[prize[0]] + '```')
-        role = discord.utils.get(ctx.message.guild.roles, id=int(prize[0]))
+        role = nextcord.utils.get(ctx.message.guild.roles, id=int(prize[0]))
         await author.add_roles(role)
 
 
@@ -565,17 +567,18 @@ async def balance(ctx: commands.Context):
     sql_to_check_user_balance = "SELECT coins FROM users WHERE discord_id = {}".format(author.id)
     cursor.execute(sql_to_check_user_balance)
     coins = cursor.fetchone()
-    embed = discord.Embed(color=0x4ad420, title=f'Баланс {ctx.message.author.name}',
+    embed = nextcord.Embed(color=0x4ad420, title=f'Баланс {ctx.message.author.name}',
                           description='**' + str(coins[0]) + ' коинов**')
     return await ctx.send(embed=embed)
 
 
 @bot.command()
-async def help(ctx: commands.Context):
-    embed = discord.Embed(color=0x17cf45, title='Помощь', description=myconst.USER_HELP)
+async def help(ctx):
+    print('Command was called')
+    embed = nextcord.Embed(color=0x17cf45, title='Помощь', description=myconst.USER_HELP)
 
-    if check_for_admin(ctx.message.author.id) == 1:
-        moderator_embed = discord.Embed(color=0x17cf45, title="Помощь для модераторов", description=myconst.MODERATOR_HELP)
+    if check_for_admin(str(ctx.message.author.id)) == 1:
+        moderator_embed = nextcord.Embed(color=0x17cf45, title="Помощь для модераторов", description=myconst.MODERATOR_HELP)
         await ctx.message.author.send(embed=moderator_embed)
 
     await ctx.send(embed=embed)
@@ -583,7 +586,7 @@ async def help(ctx: commands.Context):
 
 @bot.command(name="кацапы")
 async def kazapi(ctx: commands.Context):
-    embed = discord.Embed(color=0xCC0000, title='Дохлые кацапы', description=myconst.KAZAPI)
+    embed = nextcord.Embed(color=0xCC0000, title='Дохлые кацапы', description=myconst.KAZAPI)
 
     return await ctx.send(embed=embed)
 
@@ -648,11 +651,11 @@ async def random_number(ctx: commands.Context):
 
 
 @bot.command(name="выдатькоины")
-async def admin_give_coins(ctx: commands.Context, member: discord.Member, coins_count):
+async def admin_give_coins(ctx: commands.Context, member: nextcord.Member, coins_count):
     coins_count = int(coins_count)
     author = ctx.message.author
 
-    if check_for_admin(author.id) != 1:
+    if check_for_admin(str(author.id)) != 1:
         return await ctx.send('Ты не администратор бота')
 
     result = {'is_admin': True}
@@ -667,7 +670,7 @@ async def admin_give_coins(ctx: commands.Context, member: discord.Member, coins_
 
 
 @bot.command(name="забратькоины")
-async def admin_drop_coins(ctx: commands.Context, member: discord.Member, coins_count):
+async def admin_drop_coins(ctx: commands.Context, member: nextcord.Member, coins_count):
     coins_count = int(coins_count)
     author = ctx.message.author
     if str(author.id) == '345526389665038336':
@@ -685,7 +688,7 @@ async def admin_drop_coins(ctx: commands.Context, member: discord.Member, coins_
 
 
 @bot.command(name="проверитьбаланс")
-async def admin_get_user_balance(ctx: commands.Context, member: discord.Member):
+async def admin_get_user_balance(ctx: commands.Context, member: nextcord.Member):
     author = ctx.message.author
     if str(author.id) == '297650152691204096' or str(author.id) == '345526389665038336':
         result = {'is_admin': True}
@@ -737,7 +740,7 @@ async def check_faceit_stat(ctx: commands.Context, nickname):
 
 
 @bot.command(name="дуэль")
-async def duel(ctx: commands.Context, member: discord.Member, coins_count):
+async def duel(ctx: commands.Context, member: nextcord.Member, coins_count):
     author_id = ctx.message.author.id
 
     if check_for_user_registration(author_id) is False:
@@ -855,19 +858,19 @@ async def casino_play(ctx: commands.Context, color: str, coins_count):
     random_color = random.choices(color_array, [80, 50, 10])[0]
 
     if random_color == 'красный':
-        embed = discord.Embed(color=0xCC0000, title='Зеленский Casino', description='Кручу колесо')
+        embed = nextcord.Embed(color=0xCC0000, title='Зеленский Casino', description='Кручу колесо')
         embed.set_image(url='https://cdn.discordapp.com/attachments/345528162668511242/858744572737224724/red.gif')
         await ctx.send(embed=embed, delete_after=20)
     elif random_color == 'черный':
         if random_color == color:
             coins_count = coins_count * 2
-        embed = discord.Embed(color=0x000000, title='Зеленский Casino', description='Кручу колесо')
+        embed = nextcord.Embed(color=0x000000, title='Зеленский Casino', description='Кручу колесо')
         embed.set_image(url='https://cdn.discordapp.com/attachments/345528162668511242/858743759184068678/black.gif')
         await ctx.send(embed=embed, delete_after=20)
     elif random_color == 'зеленый':
         if random_color == color:
             coins_count = coins_count * 5
-        embed = discord.Embed(color=0x38761D, title='Зеленский Casino', description='Кручу колесо')
+        embed = nextcord.Embed(color=0x38761D, title='Зеленский Casino', description='Кручу колесо')
         embed.set_image(
             url='https://cdn.discordapp.com/attachments/345528162668511242/858743281105633290/87802a4cb981ea58.gif')
         await ctx.send(embed=embed, delete_after=20)
@@ -911,7 +914,7 @@ def check_for_user_registration(user_id):
 
 @bot.command(name="гоиграть")
 async def go_in_game_cmd(ctx: commands.Context, game: str):
-    if check_for_admin(ctx.message.author.id) != 1:
+    if check_for_admin(str(ctx.message.author.id)) != 1:
         return await ctx.send('Ты не администратор бота')
 
     server_members = ctx.guild.members
@@ -942,7 +945,7 @@ def check_for_admin(user_id: str):
 
 
 @bot.command(name="выдатьадминку")
-async def set_an_admin(ctx: commands.Context, member: discord.Member):
+async def set_an_admin(ctx: commands.Context, member: nextcord.Member):
     author = ctx.message.author
     if str(author.id) == '345526389665038336':
         print(f'{author.id} выдал админку {member.id}')
@@ -960,7 +963,7 @@ async def set_an_admin(ctx: commands.Context, member: discord.Member):
 
 
 @bot.command(name="забратьадминку")
-async def unset_an_admin(ctx: commands.Context, member: discord.Member):
+async def unset_an_admin(ctx: commands.Context, member: nextcord.Member):
     author = ctx.message.author
     if str(author.id) == '345526389665038336':
         print('Допущен')
@@ -1024,7 +1027,7 @@ async def on_ready():
     print('Bot is ready')
     global tdict
     tdict = {}
-    # await bot.change_presence(activity=discord.Activity(type=discord.ActivityType.competing, name='Purple Сhat'))
+    # await bot.change_presence(activity=nextcord.Activity(type=nextcord.ActivityType.competing, name='Purple Сhat'))
 
 
 @bot.event
@@ -1058,7 +1061,7 @@ async def table_of_the_leaders(ctx: commands.Context):
     for item in result:
         conf += f'**Имя:** {item["discord_name"]}\n**Коины:** {item["coins"]}\n**Открытых кейсов:** {item["opened_cases_count"]}\n\n----\n\n'
 
-    embed = discord.Embed(color=0x21f00e, title="Таблица лидеров", description=conf)
+    embed = nextcord.Embed(color=0x21f00e, title="Таблица лидеров", description=conf)
 
     return await ctx.send(embed=embed)
 
@@ -1075,7 +1078,7 @@ async def get_user_place_in_leader_board(ctx: commands.Context):
     for item in result:
         i = i + 1
         if str(item['discord_id']) == str(ctx.message.author.id):
-            embed = discord.Embed(color=0x21f00e, title="Ваше место", description=f'{i}')
+            embed = nextcord.Embed(color=0x21f00e, title="Ваше место", description=f'{i}')
             return await ctx.send(embed=embed)
 
 
